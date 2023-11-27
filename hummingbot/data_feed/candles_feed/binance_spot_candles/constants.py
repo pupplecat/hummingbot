@@ -8,6 +8,9 @@ CANDLES_ENDPOINT = "/api/v3/klines"
 
 WSS_URL = "wss://stream.binance.com:9443/ws"
 
+REST_URL_TESTNET = "https://testnet.binance.vision"
+WSS_URL_TESTNET = "	wss://testnet.binance.vision/ws"
+
 INTERVALS = bidict({
     "1s": "1s",
     "1m": "1m",

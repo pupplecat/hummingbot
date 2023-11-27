@@ -8,6 +8,10 @@ CANDLES_ENDPOINT = "/fapi/v1/klines"
 
 WSS_URL = "wss://fstream.binance.com/ws"
 
+REST_URL_TESTNET = "https://testnet.binancefuture.com"
+WSS_URL_TESTNET = "wss://stream.binancefuture.com"
+
+
 INTERVALS = bidict({
     "1m": 60,
     "3m": 180,
