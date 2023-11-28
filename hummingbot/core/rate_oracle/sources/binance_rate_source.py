@@ -44,6 +44,7 @@ class BinanceRateSource(RateSourceBase):
         if self._binance_exchange is None:
             self._binance_exchange = self._build_binance_connector_without_private_keys(domain="com")
             self._binance_us_exchange = self._build_binance_connector_without_private_keys(domain="us")
+            self._binance_testnet_exchange = self._build_binance_connector_without_private_keys(domain="binance_testnet")
 
     @staticmethod
     async def _get_binance_prices(exchange: 'BinanceExchange', quote_token: str = None) -> Dict[str, Decimal]:

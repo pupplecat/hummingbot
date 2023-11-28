@@ -52,10 +52,10 @@ class BinanceConfigMap(BaseConnectorConfigMap):
 
 KEYS = BinanceConfigMap.construct()
 
-OTHER_DOMAINS = ["binance_us"]
-OTHER_DOMAINS_PARAMETER = {"binance_us": "us"}
-OTHER_DOMAINS_EXAMPLE_PAIR = {"binance_us": "BTC-USDT"}
-OTHER_DOMAINS_DEFAULT_FEES = {"binance_us": DEFAULT_FEES}
+OTHER_DOMAINS = ["binance_us", "binance_testnet"]
+OTHER_DOMAINS_PARAMETER = {"binance_us": "us", "binance_testnet": "binance_testnet"}
+OTHER_DOMAINS_EXAMPLE_PAIR = {"binance_us": "BTC-USDT", "binance_testnet": "BTC-USDT"}
+OTHER_DOMAINS_DEFAULT_FEES = {"binance_us": DEFAULT_FEES, "binance_testnet": DEFAULT_FEES, }
 
 
 class BinanceUSConfigMap(BaseConnectorConfigMap):
@@ -83,4 +83,29 @@ class BinanceUSConfigMap(BaseConnectorConfigMap):
         title = "binance_us"
 
 
-OTHER_DOMAINS_KEYS = {"binance_us": BinanceUSConfigMap.construct()}
+class BinanceTestnetConfigMap(BaseConnectorConfigMap):
+    connector: str = Field(default="binance_testnet", const=True, client_data=None)
+    binance_api_key: SecretStr = Field(
+        default=...,
+        client_data=ClientFieldData(
+            prompt=lambda cm: "Enter your Binance Testnet API key",
+            is_secure=True,
+            is_connect_key=True,
+            prompt_on_new=True,
+        )
+    )
+    binance_api_secret: SecretStr = Field(
+        default=...,
+        client_data=ClientFieldData(
+            prompt=lambda cm: "Enter your Binance Testnet API secret",
+            is_secure=True,
+            is_connect_key=True,
+            prompt_on_new=True,
+        )
+    )
+
+    class Config:
+        title = "binance_testnet"
+
+
+OTHER_DOMAINS_KEYS = {"binance_us": BinanceUSConfigMap.construct(), "binance_testnet": BinanceTestnetConfigMap.construct()}

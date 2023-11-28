@@ -70,6 +70,8 @@ class BinanceExchange(ExchangePyBase):
     def name(self) -> str:
         if self._domain == "com":
             return "binance"
+        elif self._domain == CONSTANTS.TESTNET_DOMAIN:
+            return self._domain
         else:
             return f"binance_{self._domain}"
 

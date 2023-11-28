@@ -4,6 +4,7 @@ connector_status = {
     # client connectors
     'ascend_ex': 'bronze',
     'binance': 'gold',
+    'binance_testnet': 'gold',
     'binance_perpetual': 'gold',
     'binance_perpetual_testnet': 'gold',
     'binance_us': 'bronze',

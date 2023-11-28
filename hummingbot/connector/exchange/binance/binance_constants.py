@@ -10,6 +10,10 @@ MAX_ORDER_ID_LEN = 32
 REST_URL = "https://api.binance.{}/api/"
 WSS_URL = "wss://stream.binance.{}:9443/ws"
 
+TESTNET_REST_URL = "https://testnet.binance.vision/api/"
+TESTNET_WSS_URL = "wss://testnet.binance.vision/ws"
+TESTNET_DOMAIN = "binance_testnet"
+
 PUBLIC_API_VERSION = "v3"
 PRIVATE_API_VERSION = "v3"
 
