@@ -459,7 +459,7 @@ pure_market_making_config_map = {
                   validator=lambda v: validate_decimal(v, 0, 100),
                   default=Decimal("5")),
     "spread_skew_v1_maximum_factor":
-        ConfigVar(key="spread_skew_v1_threshold",
+        ConfigVar(key="spread_skew_v1_maximum_factor",
                   prompt="What is your spread skew v1 maximum factor? Enter 50 for 50% >>> ",
                   required_if=lambda: pure_market_making_config_map.get("spread_skew_v1_enabled").value,
                   type_str="decimal",

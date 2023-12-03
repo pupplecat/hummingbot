@@ -1201,6 +1201,45 @@ class PMMUnitTest(unittest.TestCase):
         self.assertEqual(Decimal("102.499"), strategy.active_sells[0].price)
         self.assertEqual(strategy.active_buys[1].price / strategy.active_buys[0].price, Decimal("0.98") / Decimal("0.99"))
 
+    def test_spread_skew_v1(self):
+        strategy = self.one_level_strategy
+        strategy.spread_skew_v1_enabled = True
+        strategy.spread_skew_v1_threshold = Decimal("0.05")
+        strategy.spread_skew_v1_maximum_factor = Decimal("5.0")
+        self.clock.add_iterator(strategy)
+        self.clock.backtest_til(self.start_timestamp + 1)
+
+        self.assertEqual(1, len(strategy.active_buys))
+        self.assertEqual(1, len(strategy.active_sells))
+        first_bid_order = strategy.active_buys[0]
+        first_ask_order = strategy.active_sells[0]
+        self.assertEqual(Decimal("99"), first_bid_order.price)
+        self.assertEqual(Decimal("101"), first_ask_order.price)
+        self.assertEqual(Decimal("0.5"), first_bid_order.quantity)
+        self.assertEqual(Decimal("1.5"), first_ask_order.quantity)
+
+        self.simulate_maker_market_trade(True, 5.0, 101.1)
+        self.assertEqual(1, len(strategy.active_buys))
+        self.assertEqual(0, len(strategy.active_sells))
+
+        self.clock.backtest_til(self.start_timestamp + 2)
+        self.assertEqual(1, len(self.order_fill_logger.event_log))
+
+        maker_fill = self.order_fill_logger.event_log[0]
+        self.assertEqual(TradeType.SELL, maker_fill.trade_type)
+        self.assertAlmostEqual(101, maker_fill.price)
+        self.assertAlmostEqual(Decimal("1.5"), Decimal(str(maker_fill.amount)), places=4)
+
+        self.clock.backtest_til(self.start_timestamp + 7)
+        self.assertEqual(1, len(strategy.active_buys))
+        self.assertEqual(1, len(strategy.active_sells))
+        first_bid_order = strategy.active_buys[0]
+        first_ask_order = strategy.active_sells[0]
+        self.assertEqual(Decimal("99"), first_bid_order.price)
+        self.assertEqual(Decimal("101"), first_ask_order.price)
+        self.assertEqual(Decimal("0.651349"), first_bid_order.quantity)
+        self.assertEqual(Decimal("1.34865"), first_ask_order.quantity)
+
 
 class PureMarketMakingMinimumSpreadUnitTest(unittest.TestCase):
     start: pd.Timestamp = pd.Timestamp("2019-01-01", tz="UTC")

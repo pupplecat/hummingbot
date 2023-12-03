@@ -117,7 +117,7 @@ cdef object c_calculate_bid_ask_spread_ratios_from_base_asset_ratio_v2(
         double bid_adjustment = left_inventory_ratio if base_asset_value < target_base_asset_value else right_inventory_ratio
         double ask_adjustment = maximum_skew_factor - bid_adjustment
 
-    return InventorySkewBidAskRatios(bid_adjustment, ask_adjustment)
+    return InventorySkewBidAskRatios(1.0 + bid_adjustment, 1.0 + ask_adjustment)
 
 # double left_inventory_ratio = np.interp(base_asset_value,
 #                                         [left_base_asset_value_limit, target_base_asset_value],

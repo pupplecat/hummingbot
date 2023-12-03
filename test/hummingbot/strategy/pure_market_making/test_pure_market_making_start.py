@@ -57,6 +57,11 @@ class PureMarketMakingStartTest(unittest.TestCase):
         c_map.get("ask_order_level_spreads").value = "1,2"
         c_map.get("bid_order_level_amounts").value = "1,2"
         c_map.get("ask_order_level_amounts").value = None
+        c_map.get("spread_skew_v1_enabled").value = True
+        c_map.get("spread_skew_v1_threshold").value = Decimal("5")
+        c_map.get("spread_skew_v1_maximum_factor").value = Decimal("500")
+        c_map.get("spread_skew_v2_enabled").value = True
+        c_map.get("spread_skew_v2_maximum_factor").value = Decimal("200")
 
     def _initialize_market_assets(self, market, trading_pairs):
         return [("ETH", "USDT")]
@@ -105,3 +110,8 @@ class PureMarketMakingStartTest(unittest.TestCase):
         self.assertEqual(self.strategy.order_override, {"split_level_0": ['buy', Decimal("1"), Decimal("1")],
                                                         "split_level_1": ['buy', Decimal("2"), Decimal("2")],
                                                         })
+        self.assertEqual(self.strategy.spread_skew_v1_enabled, True)
+        self.assertEqual(self.strategy.spread_skew_v1_threshold, Decimal("0.05"))
+        self.assertEqual(self.strategy.spread_skew_v1_maximum_factor, Decimal("5"))
+        self.assertEqual(self.strategy.spread_skew_v2_enabled, True)
+        self.assertEqual(self.strategy.spread_skew_v2_maximum_factor, Decimal("2"))

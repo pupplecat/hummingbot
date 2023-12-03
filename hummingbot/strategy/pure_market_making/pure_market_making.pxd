@@ -57,10 +57,10 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         object _last_own_trade_price
         bint _should_wait_order_cancel_confirmation
         bint _spread_skew_v1_enabled
-        double _spread_skew_v1_threshold
-        double _spread_skew_v1_maximum_factor
+        object _spread_skew_v1_threshold
+        object _spread_skew_v1_maximum_factor
         bint _spread_skew_v2_enabled
-        double _spread_skew_v2_maximum_factor
+        object _spread_skew_v2_maximum_factor
 
         object _moving_price_band
 

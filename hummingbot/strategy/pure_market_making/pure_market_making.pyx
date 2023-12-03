@@ -91,10 +91,10 @@ cdef class PureMarketMakingStrategy(StrategyBase):
                     should_wait_order_cancel_confirmation: bool = True,
                     moving_price_band: Optional[MovingPriceBand] = None,
                     spread_skew_v1_enabled: bool = False,
-                    spread_skew_v1_threshold: float = 0.0,
-                    spread_skew_v1_maximum_factor: float = 0.0,
+                    spread_skew_v1_threshold: Decimal = s_decimal_zero,
+                    spread_skew_v1_maximum_factor: Decimal = s_decimal_zero,
                     spread_skew_v2_enabled: bool = False,
-                    spread_skew_v2_maximum_factor: float = 0.0,
+                    spread_skew_v2_maximum_factor: Decimal = s_decimal_zero,
                     ):
         if order_override is None:
             order_override = {}
@@ -516,19 +516,19 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         self._spread_skew_v1_enabled = value
 
     @property
-    def spread_skew_v1_threshold(self) -> bool:
+    def spread_skew_v1_threshold(self) -> Decimal:
         return self._spread_skew_v1_threshold
 
     @spread_skew_v1_threshold.setter
-    def spread_skew_v1_threshold(self, value: float):
+    def spread_skew_v1_threshold(self, value: Decimal):
         self._spread_skew_v1_threshold = value
 
     @property
-    def spread_skew_v1_maximum_factor(self) -> bool:
+    def spread_skew_v1_maximum_factor(self) -> Decimal:
         return self._spread_skew_v1_maximum_factor
 
     @spread_skew_v1_maximum_factor.setter
-    def spread_skew_v1_maximum_factor(self, value: float):
+    def spread_skew_v1_maximum_factor(self, value: Decimal):
         self._spread_skew_v1_maximum_factor = value
 
     @property
@@ -540,11 +540,11 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         self._spread_skew_v2_enabled = value
 
     @property
-    def spread_skew_v2_maximum_factor(self) -> bool:
+    def spread_skew_v2_maximum_factor(self) -> Decimal:
         return self._spread_skew_v2_maximum_factor
 
     @spread_skew_v2_maximum_factor.setter
-    def spread_skew_v2_maximum_factor(self, value: float):
+    def spread_skew_v2_maximum_factor(self, value: Decimal):
         self._spread_skew_v2_maximum_factor = value
 
     def inventory_skew_stats_data_frame(self) -> Optional[pd.DataFrame]:
