@@ -56,6 +56,11 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         int64_t _logging_options
         object _last_own_trade_price
         bint _should_wait_order_cancel_confirmation
+        bint _spread_skew_v1_enabled
+        double _spread_skew_v1_threshold
+        double _spread_skew_v1_maximum_factor
+        bint _spread_skew_v2_enabled
+        double _spread_skew_v2_maximum_factor
 
         object _moving_price_band
 
@@ -81,3 +86,9 @@ cdef class PureMarketMakingStrategy(StrategyBase):
     cdef c_execute_orders_proposal(self, object proposal)
     cdef set_timers(self)
     cdef c_apply_moving_price_band(self, object proposal)
+    cdef tuple c_get_order_level_spread(self)
+    cdef tuple c_get_spread_skew_v1(self)
+    cdef tuple c_get_spread_skew_v2(self)
+    cdef tuple c_get_default_order_level_spread(self)
+    cdef double c_calc_buy_price_by_level(self, level: double, reference_price: double, spread: double, spread_ratio:double)
+    cdef double c_calc_sell_price_by_level(self, level: double, reference_price: double, spread: double, spread_ratio:double)

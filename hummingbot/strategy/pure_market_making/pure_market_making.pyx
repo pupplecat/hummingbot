@@ -21,9 +21,13 @@ from hummingbot.strategy.market_trading_pair_tuple import MarketTradingPairTuple
 from hummingbot.strategy.order_book_asset_price_delegate cimport OrderBookAssetPriceDelegate
 from hummingbot.strategy.strategy_base import StrategyBase
 from hummingbot.strategy.utils import order_age
-from .data_types import PriceSize, Proposal
+from .data_types import PriceSize, Proposal, InventorySkewBidAskRatios
 from .inventory_cost_price_delegate import InventoryCostPriceDelegate
-from .inventory_skew_calculator cimport c_calculate_bid_ask_ratios_from_base_asset_ratio
+from .inventory_skew_calculator cimport (
+    c_calculate_bid_ask_ratios_from_base_asset_ratio,
+    c_calculate_bid_ask_spread_ratios_from_base_asset_ratio_v1,
+    c_calculate_bid_ask_spread_ratios_from_base_asset_ratio_v2,
+)
 from .inventory_skew_calculator import calculate_total_order_size
 from .pure_market_making_order_tracker import PureMarketMakingOrderTracker
 from .moving_price_band import MovingPriceBand
@@ -85,7 +89,12 @@ cdef class PureMarketMakingStrategy(StrategyBase):
                     bid_order_level_spreads: List[Decimal] = None,
                     ask_order_level_spreads: List[Decimal] = None,
                     should_wait_order_cancel_confirmation: bool = True,
-                    moving_price_band: Optional[MovingPriceBand] = None
+                    moving_price_band: Optional[MovingPriceBand] = None,
+                    spread_skew_v1_enabled: bool = False,
+                    spread_skew_v1_threshold: float = 0.0,
+                    spread_skew_v1_maximum_factor: float = 0.0,
+                    spread_skew_v2_enabled: bool = False,
+                    spread_skew_v2_maximum_factor: float = 0.0,
                     ):
         if order_override is None:
             order_override = {}
@@ -144,6 +153,12 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         self._last_own_trade_price = Decimal('nan')
         self._should_wait_order_cancel_confirmation = should_wait_order_cancel_confirmation
         self._moving_price_band = moving_price_band
+        self._spread_skew_v1_enabled = spread_skew_v1_enabled
+        self._spread_skew_v1_threshold = spread_skew_v1_threshold
+        self._spread_skew_v1_maximum_factor = spread_skew_v1_maximum_factor
+        self._spread_skew_v2_enabled = spread_skew_v2_enabled
+        self._spread_skew_v2_maximum_factor = spread_skew_v2_maximum_factor
+
         self.c_add_markets([market_info.market])
 
     def all_markets_ready(self):
@@ -492,6 +507,46 @@ cdef class PureMarketMakingStrategy(StrategyBase):
     def inventory_cost_price_delegate(self, value):
         self._inventory_cost_price_delegate = value
 
+    @property
+    def spread_skew_v1_enabled(self) -> bool:
+        return self._spread_skew_v1_enabled
+
+    @spread_skew_v1_enabled.setter
+    def spread_skew_v1_enabled(self, value: bool):
+        self._spread_skew_v1_enabled = value
+
+    @property
+    def spread_skew_v1_threshold(self) -> bool:
+        return self._spread_skew_v1_threshold
+
+    @spread_skew_v1_threshold.setter
+    def spread_skew_v1_threshold(self, value: float):
+        self._spread_skew_v1_threshold = value
+
+    @property
+    def spread_skew_v1_maximum_factor(self) -> bool:
+        return self._spread_skew_v1_maximum_factor
+
+    @spread_skew_v1_maximum_factor.setter
+    def spread_skew_v1_maximum_factor(self, value: float):
+        self._spread_skew_v1_maximum_factor = value
+
+    @property
+    def spread_skew_v2_enabled(self) -> bool:
+        return self._spread_skew_v2_enabled
+
+    @spread_skew_v2_enabled.setter
+    def spread_skew_v2_enabled(self, value: bool):
+        self._spread_skew_v2_enabled = value
+
+    @property
+    def spread_skew_v2_maximum_factor(self) -> bool:
+        return self._spread_skew_v2_maximum_factor
+
+    @spread_skew_v2_maximum_factor.setter
+    def spread_skew_v2_maximum_factor(self, value: float):
+        self._spread_skew_v2_maximum_factor = value
+
     def inventory_skew_stats_data_frame(self) -> Optional[pd.DataFrame]:
         cdef:
             ExchangeBase market = self._market_info.market
@@ -801,9 +856,12 @@ cdef class PureMarketMakingStrategy(StrategyBase):
                         if size > 0 and price > 0:
                             sells.append(PriceSize(price, size))
         else:
+            bid_adj_spread, ask_adj_spread = self.c_get_order_level_spread()
+
             if not buy_reference_price.is_nan():
                 for level in range(0, self._buy_levels):
-                    price = buy_reference_price * (Decimal("1") - self._bid_spread - (level * self._order_level_spread))
+                    # price = buy_reference_price * (Decimal("1") - self._bid_spread - (level * self._order_level_spread))
+                    price = self.c_calc_buy_price_by_level(level, buy_reference_price, self._bid_spread, bid_adj_spread)
                     price = market.c_quantize_order_price(self.trading_pair, price)
                     size = self._order_amount + (self._order_level_amount * level)
                     size = market.c_quantize_order_amount(self.trading_pair, size)
@@ -811,7 +869,8 @@ cdef class PureMarketMakingStrategy(StrategyBase):
                         buys.append(PriceSize(price, size))
             if not sell_reference_price.is_nan():
                 for level in range(0, self._sell_levels):
-                    price = sell_reference_price * (Decimal("1") + self._ask_spread + (level * self._order_level_spread))
+                    # price = sell_reference_price * (Decimal("1") + self._ask_spread + (level * self._order_level_spread))
+                    price = self.c_calc_sell_price_by_level(level, sell_reference_price, self._ask_spread, ask_adj_spread)
                     price = market.c_quantize_order_price(self.trading_pair, price)
                     size = self._order_amount + (self._order_level_amount * level)
                     size = market.c_quantize_order_amount(self.trading_pair, size)
@@ -915,6 +974,55 @@ cdef class PureMarketMakingStrategy(StrategyBase):
             size = sell.size * ask_adj_ratio
             size = market.c_quantize_order_amount(self.trading_pair, size, sell.price)
             sell.size = size
+
+    cdef tuple c_get_order_level_spread(self):
+        if self.spread_skew_v1_enabled:
+            return self.c_get_spread_skew_v1()
+        elif self.spread_skew_v2_enabled:
+            return self.c_get_spread_skew_v2()
+        else:
+            return self.c_get_default_order_level_spread()
+
+    cdef double c_calc_buy_price_by_level(self, level: double, reference_price: double, spread: double, spread_ratio:double):
+        if self.spread_skew_v1_enabled or self.spread_skew_v2_enabled:
+            return reference_price - (level + 1) * spread * spread_ratio
+        else:
+            return reference_price * (Decimal("1") - spread - (level * spread_ratio))
+
+    cdef double c_calc_sell_price_by_level(self, level: double, reference_price: double, spread: double, spread_ratio:double):
+        if self.spread_skew_v1_enabled or self.spread_skew_v2_enabled:
+            return reference_price + (level + 1) * spread * spread_ratio
+        else:
+            return reference_price * (Decimal("1") + spread + (level * spread_ratio))
+
+    cdef tuple c_get_spread_skew_v1(self):
+        base_balance, quote_balance = self.c_get_adjusted_available_balance(self.active_orders)
+        bid_ask_ratios = c_calculate_bid_ask_spread_ratios_from_base_asset_ratio_v1(
+            float(base_balance),
+            float(quote_balance),
+            float(self.get_price()),
+            float(self._spread_skew_v1_threshold),
+            float(self._spread_skew_v1_maximum_factor)
+        )
+
+        return Decimal(bid_ask_ratios.bid_ratio), Decimal(bid_ask_ratios.ask_ratio)
+
+    cdef tuple c_get_spread_skew_v2(self):
+        base_balance, quote_balance = self.c_get_adjusted_available_balance(self.active_orders)
+        total_order_size = calculate_total_order_size(self._order_amount, self._order_level_amount, self._order_levels)
+        bid_ask_ratios = c_calculate_bid_ask_spread_ratios_from_base_asset_ratio_v2(
+            float(base_balance),
+            float(quote_balance),
+            float(self.get_price()),
+            float(self._inventory_target_base_pct),
+            float(total_order_size * self._inventory_range_multiplier),
+            float(self._spread_skew_v2_maximum_factor)
+        )
+
+        return Decimal(bid_ask_ratios.bid_ratio), Decimal(bid_ask_ratios.ask_ratio)
+
+    cdef tuple c_get_default_order_level_spread(self):
+        return self._order_level_spread, self._order_level_spread
 
     def adjusted_available_balance_for_orders_budget_constrain(self):
         candidate_hanging_orders = self.hanging_orders_tracker.candidate_hanging_orders_from_pairs()

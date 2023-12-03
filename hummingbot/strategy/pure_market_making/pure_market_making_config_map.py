@@ -445,4 +445,37 @@ pure_market_making_config_map = {
                       "split_order_levels_enabled").value,
                   type_str="str",
                   validator=validate_decimal_list),
+    "spread_skew_v1_enabled":
+        ConfigVar(key="spread_skew_v1_enabled",
+                  prompt="Would you like to enable spread skew v1? (Yes/No) >>> ",
+                  type_str="bool",
+                  default=False,
+                  validator=validate_bool),
+    "spread_skew_v1_threshold":
+        ConfigVar(key="spread_skew_v1_threshold",
+                  prompt="What is your spread skew v1 threshold? Enter 50 for 50% >>> ",
+                  required_if=lambda: pure_market_making_config_map.get("spread_skew_v1_enabled").value,
+                  type_str="decimal",
+                  validator=lambda v: validate_decimal(v, 0, 100),
+                  default=Decimal("5")),
+    "spread_skew_v1_maximum_factor":
+        ConfigVar(key="spread_skew_v1_threshold",
+                  prompt="What is your spread skew v1 maximum factor? Enter 50 for 50% >>> ",
+                  required_if=lambda: pure_market_making_config_map.get("spread_skew_v1_enabled").value,
+                  type_str="decimal",
+                  validator=lambda v: validate_decimal(v, 0),
+                  default=Decimal("100")),
+    "spread_skew_v2_enabled":
+        ConfigVar(key="spread_skew_v2_enabled",
+                  prompt="Would you like to enable spread skew v2? (Yes/No) >>> ",
+                  type_str="bool",
+                  default=False,
+                  validator=validate_bool),
+    "spread_skew_v2_maximum_factor":
+        ConfigVar(key="spread_skew_v2_threshold",
+                  prompt="What is your spread skew v1 maximum factor? Enter 50 for 50% >>> ",
+                  required_if=lambda: pure_market_making_config_map.get("spread_skew_v2_enabled").value,
+                  type_str="decimal",
+                  validator=lambda v: validate_decimal(v, 0),
+                  default=Decimal("200")),
 }

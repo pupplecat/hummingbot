@@ -78,16 +78,16 @@ cdef object c_calculate_bid_ask_spread_ratios_from_base_asset_ratio_v1(
         double base_asset_amount, double quote_asset_amount, double price,
         double skew_threshold, double maximum_skew_factor):
 
-    if base_asset_amount <= 0.0 or quote_asset_amount <= 0.0:
-        return InventorySkewBidAskRatios(0, 0)
+    if base_asset_amount <= 0.0 or quote_asset_amount <= 0.0 or skew_threshold <= 0.0 or maximum_skew_factor <= 0.0:
+        return InventorySkewBidAskRatios(1.0, 1.0)
 
     cdef double base_asset_value = base_asset_amount * price
     cdef double skew_ratio = base_asset_value / (base_asset_value + quote_asset_amount)
 
     if skew_ratio <= skew_threshold:
-        return InventorySkewBidAskRatios(0, 0)
+        return InventorySkewBidAskRatios(1.0, 1.0)
 
-    cdef double skew_factor = (skew_ratio - skew_threshold) * maximum_skew_factor
+    cdef double skew_factor = 1 + (skew_ratio - skew_threshold) * maximum_skew_factor
 
     return InventorySkewBidAskRatios(skew_factor, skew_factor)
 
@@ -99,7 +99,7 @@ cdef object c_calculate_bid_ask_spread_ratios_from_base_asset_ratio_v2(
         double total_portfolio_value = base_asset_amount * price + quote_asset_amount
 
     if total_portfolio_value <= 0.0 or base_asset_range <= 0.0 or maximum_skew_factor <= 0.0:
-        return InventorySkewBidAskRatios(0.0, 0.0)
+        return InventorySkewBidAskRatios(1.0, 1.0)
 
     cdef:
         double base_asset_value = base_asset_amount * price

@@ -100,6 +100,15 @@ def start(self):
 
         should_wait_order_cancel_confirmation = c_map.get("should_wait_order_cancel_confirmation")
 
+        spread_skew_v1_enabled = c_map.get("spread_skew_v1_enabled").value
+        spread_skew_v1_threshold = 0 if c_map.get("spread_skew_v1_threshold").value is None else \
+            c_map.get("spread_skew_v1_threshold").value / Decimal('100')
+        spread_skew_v1_maximum_factor = 0 if c_map.get("spread_skew_v1_maximum_factor").value is None else \
+            c_map.get("spread_skew_v1_maximum_factor").value / Decimal('100')
+        spread_skew_v2_enabled = c_map.get("spread_skew_v2_enabled").value
+        spread_skew_v2_maximum_factor = 0 if c_map.get("spread_skew_v2_maximum_factor").value is None else \
+            c_map.get("spread_skew_v2_maximum_factor").value / Decimal('100')
+
         strategy_logging_options = PureMarketMakingStrategy.OPTION_LOG_ALL
         self.strategy = PureMarketMakingStrategy()
         self.strategy.init_params(
@@ -138,7 +147,12 @@ def start(self):
             bid_order_level_spreads=bid_order_level_spreads,
             ask_order_level_spreads=ask_order_level_spreads,
             should_wait_order_cancel_confirmation=should_wait_order_cancel_confirmation,
-            moving_price_band=moving_price_band
+            moving_price_band=moving_price_band,
+            spread_skew_v1_enabled=spread_skew_v1_enabled,
+            spread_skew_v1_threshold=spread_skew_v1_threshold,
+            spread_skew_v1_maximum_factor=spread_skew_v1_maximum_factor,
+            spread_skew_v2_enabled=spread_skew_v2_enabled,
+            spread_skew_v2_maximum_factor=spread_skew_v2_maximum_factor
         )
     except Exception as e:
         self.notify(str(e))
