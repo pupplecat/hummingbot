@@ -858,6 +858,7 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         else:
             bid_adj_spread, ask_adj_spread = self.c_get_order_level_spread()
 
+
             if not buy_reference_price.is_nan():
                 for level in range(0, self._buy_levels):
                     # price = buy_reference_price * (Decimal("1") - self._bid_spread - (level * self._order_level_spread))
@@ -983,17 +984,17 @@ cdef class PureMarketMakingStrategy(StrategyBase):
         else:
             return self.c_get_default_order_level_spread()
 
-    cdef double c_calc_buy_price_by_level(self, level: double, reference_price: double, spread: double, spread_ratio:double):
+    cdef object c_calc_buy_price_by_level(self, level: double, reference_price: object, spread: object, spread_ratio:object):
         if self.spread_skew_v1_enabled or self.spread_skew_v2_enabled:
-            return reference_price - (level + 1) * spread * spread_ratio
+            return Decimal(reference_price - (level + 1) * spread * spread_ratio)
         else:
-            return reference_price * (Decimal("1") - spread - (level * spread_ratio))
+            return Decimal(reference_price * (Decimal("1") - spread - (level * spread_ratio)))
 
-    cdef double c_calc_sell_price_by_level(self, level: double, reference_price: double, spread: double, spread_ratio:double):
+    cdef object c_calc_sell_price_by_level(self, level: double, reference_price: object, spread: object, spread_ratio:object):
         if self.spread_skew_v1_enabled or self.spread_skew_v2_enabled:
-            return reference_price + (level + 1) * spread * spread_ratio
+            return Decimal(reference_price + (level + 1) * spread * spread_ratio)
         else:
-            return reference_price * (Decimal("1") + spread + (level * spread_ratio))
+            return Decimal(reference_price * (Decimal("1") + spread + (level * spread_ratio)))
 
     cdef tuple c_get_spread_skew_v1(self):
         base_balance, quote_balance = self.c_get_adjusted_available_balance(self.active_orders)

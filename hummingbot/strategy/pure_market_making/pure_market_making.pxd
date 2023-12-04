@@ -90,5 +90,5 @@ cdef class PureMarketMakingStrategy(StrategyBase):
     cdef tuple c_get_spread_skew_v1(self)
     cdef tuple c_get_spread_skew_v2(self)
     cdef tuple c_get_default_order_level_spread(self)
-    cdef double c_calc_buy_price_by_level(self, level: double, reference_price: double, spread: double, spread_ratio:double)
-    cdef double c_calc_sell_price_by_level(self, level: double, reference_price: double, spread: double, spread_ratio:double)
+    cdef object c_calc_buy_price_by_level(self, level: double, reference_price: object, spread: object, spread_ratio:object)
+    cdef object c_calc_sell_price_by_level(self, level: double, reference_price: object, spread: object, spread_ratio:object)

@@ -1201,7 +1201,7 @@ class PMMUnitTest(unittest.TestCase):
         self.assertEqual(Decimal("102.499"), strategy.active_sells[0].price)
         self.assertEqual(strategy.active_buys[1].price / strategy.active_buys[0].price, Decimal("0.98") / Decimal("0.99"))
 
-    def test_spread_skew_v1(self):
+    def test_spread_skew_v1_single_level(self):
         strategy = self.one_level_strategy
         strategy.spread_skew_v1_enabled = True
         strategy.spread_skew_v1_threshold = Decimal("0.05")
@@ -1213,10 +1213,11 @@ class PMMUnitTest(unittest.TestCase):
         self.assertEqual(1, len(strategy.active_sells))
         first_bid_order = strategy.active_buys[0]
         first_ask_order = strategy.active_sells[0]
-        self.assertEqual(Decimal("99"), first_bid_order.price)
-        self.assertEqual(Decimal("101"), first_ask_order.price)
-        self.assertEqual(Decimal("0.5"), first_bid_order.quantity)
-        self.assertEqual(Decimal("1.5"), first_ask_order.quantity)
+        # 99 / 101
+        self.assertEqual(Decimal("99.9470"), first_bid_order.price)
+        self.assertEqual(Decimal("100.052"), first_ask_order.price)
+        self.assertEqual(Decimal("1"), first_bid_order.quantity)
+        self.assertEqual(Decimal("1"), first_ask_order.quantity)
 
         self.simulate_maker_market_trade(True, 5.0, 101.1)
         self.assertEqual(1, len(strategy.active_buys))
@@ -1227,18 +1228,79 @@ class PMMUnitTest(unittest.TestCase):
 
         maker_fill = self.order_fill_logger.event_log[0]
         self.assertEqual(TradeType.SELL, maker_fill.trade_type)
-        self.assertAlmostEqual(101, maker_fill.price)
-        self.assertAlmostEqual(Decimal("1.5"), Decimal(str(maker_fill.amount)), places=4)
+        self.assertAlmostEqual(Decimal("100.052"), maker_fill.price)
+        self.assertAlmostEqual(Decimal("1"), Decimal(str(maker_fill.amount)), places=4)
 
         self.clock.backtest_til(self.start_timestamp + 7)
         self.assertEqual(1, len(strategy.active_buys))
         self.assertEqual(1, len(strategy.active_sells))
         first_bid_order = strategy.active_buys[0]
         first_ask_order = strategy.active_sells[0]
-        self.assertEqual(Decimal("99"), first_bid_order.price)
-        self.assertEqual(Decimal("101"), first_ask_order.price)
-        self.assertEqual(Decimal("0.651349"), first_bid_order.quantity)
-        self.assertEqual(Decimal("1.34865"), first_ask_order.quantity)
+        self.assertEqual(Decimal("99.9471"), first_bid_order.price)
+        self.assertEqual(Decimal("100.052"), first_ask_order.price)
+        self.assertEqual(Decimal("1"), first_bid_order.quantity)
+        self.assertEqual(Decimal("1"), first_ask_order.quantity)
+
+    def test_spread_skew_v1_multi_levels(self):
+        strategy = self.multi_levels_strategy
+        strategy.spread_skew_v1_enabled = True
+        strategy.spread_skew_v1_threshold = Decimal("0.05")
+        strategy.spread_skew_v1_maximum_factor = Decimal("5.0")
+        self.clock.add_iterator(strategy)
+        self.clock.backtest_til(self.start_timestamp + 1)
+
+        self.assertEqual(3, len(strategy.active_buys))
+        self.assertEqual(3, len(strategy.active_sells))
+        buys = strategy.active_buys
+        sells = strategy.active_sells
+
+        self.assertEqual(Decimal("99.9470"), buys[0].price)
+        self.assertEqual(Decimal("100.052"), sells[0].price)
+        self.assertEqual(Decimal("1"), buys[0].quantity)
+        self.assertEqual(Decimal("1"), sells[0].quantity)
+        self.assertEqual(Decimal("99.8940"), buys[1].price)
+        self.assertEqual(Decimal("100.105"), sells[1].price)
+        self.assertEqual(Decimal("2"), buys[1].quantity)
+        self.assertEqual(Decimal("2"), sells[1].quantity)
+        self.assertEqual(Decimal("99.8411"), buys[2].price)
+        self.assertEqual(Decimal("100.158"), sells[2].price)
+        self.assertEqual(Decimal("3"), buys[2].quantity)
+        self.assertEqual(Decimal("3"), sells[2].quantity)
+
+        self.simulate_maker_market_trade(True, 5.0, 101.1)
+        self.assertEqual(3, len(strategy.active_buys))
+        self.assertEqual(0, len(strategy.active_sells))
+
+        self.clock.backtest_til(self.start_timestamp + 2)
+        self.assertEqual(3, len(self.order_fill_logger.event_log))
+
+        event_logs = self.order_fill_logger.event_log
+        self.assertEqual(TradeType.SELL, event_logs[0].trade_type)
+        self.assertAlmostEqual(Decimal("100.052"), event_logs[0].price)
+        self.assertAlmostEqual(Decimal("1"), Decimal(str(event_logs[0].amount)), places=4)
+        self.assertAlmostEqual(Decimal("100.105"), event_logs[1].price)
+        self.assertAlmostEqual(Decimal("2"), Decimal(str(event_logs[1].amount)), places=4)
+        self.assertAlmostEqual(Decimal("100.158"), event_logs[2].price)
+        self.assertAlmostEqual(Decimal("3"), Decimal(str(event_logs[2].amount)), places=4)
+
+        self.clock.backtest_til(self.start_timestamp + 7)
+        self.assertEqual(3, len(strategy.active_buys))
+        self.assertEqual(3, len(strategy.active_sells))
+        buys = strategy.active_buys
+        sells = strategy.active_sells
+
+        self.assertEqual(Decimal("99.9475"), buys[0].price)
+        self.assertEqual(Decimal("100.052"), sells[0].price)
+        self.assertEqual(Decimal("1"), buys[0].quantity)
+        self.assertEqual(Decimal("1"), sells[0].quantity)
+        self.assertEqual(Decimal("99.8951"), buys[1].price)
+        self.assertEqual(Decimal("100.104"), sells[1].price)
+        self.assertEqual(Decimal("2"), buys[1].quantity)
+        self.assertEqual(Decimal("2"), sells[1].quantity)
+        self.assertEqual(Decimal("99.8427"), buys[2].price)
+        self.assertEqual(Decimal("100.157"), sells[2].price)
+        self.assertEqual(Decimal("3"), buys[2].quantity)
+        self.assertEqual(Decimal("3"), sells[2].quantity)
 
 
 class PureMarketMakingMinimumSpreadUnitTest(unittest.TestCase):
